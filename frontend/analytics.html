@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+      button {
+        padding: 10px 20px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+
+      .analytics {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        margin: 20px auto;
+        padding: 20px;
+        width: 80%;
+        max-width: 800px;
+      }
+
+      .tripsbyDriver {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      input[type='text'] {
+        padding: 10px;
+        margin-right: 10px;
+        width: 60%;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      input[type='submit'] {
+        padding: 10px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+      }
+
+      input[type='submit']:hover {
+        background-color: #45a049;
+      }
+
+      #result {
+        margin-top: 20px;
+        font-size: 18px;
+      }
+
+      canvas {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="analytics">
+      <div class="tripsbyDriver">
+        <h1>Trips made by Driver:</h1>
+        <input type="text" id="searchInput" placeholder="Enter driver ID" />
+        <input type="submit" value="Search" onclick="performTripsSearch()" />
+        <div id="result"></div>
+      </div>
+    </div>
+
+    <div class="analytics">
+      <div class="tripsbyDriver">
+        <h1>Fuel Expense Analytics</h1>
+        <!-- Form for capturing the year -->
+        <form
+          id="yearForm"
+          onsubmit="event.preventDefault(); performFuelExpenseSearch()"
+        >
+          <label for="yearInput">Enter Year:</label>
+          <input type="text" id="yearInput" placeholder="Enter year" />
+          <input type="submit" value="Get Data" />
+        </form>
+
+        <div id="result2" class="result"></div>
+        <canvas id="fuelExpenseChart" width="400" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="analytics">
+      <div class="tripsbyDriver">
+        <h1>Maintenance Cost Analytics</h1>
+        <!-- Form for capturing the year -->
+        <form
+          id="maintenanceCostForm"
+          onsubmit="event.preventDefault(); performMaintenanceCostSearch()"
+        >
+          <input type="submit" value="Get Maintenance Cost Data" />
+        </form>
+
+        <div id="result3" class="result"></div>
+        <canvas id="maintenanceCostChart" width="400" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="analytics">
+      <div class="tripsbyDriver">
+        <h1>Fuel Cost Analytics</h1>
+        <button onclick="getFuelCostData()">Get Fuel Cost Data</button>
+        <div id="result4" class="result"></div>
+        <canvas id="fuelCostChart" width="400" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="analytics">
+      <div class="tripsbyDriver">
+        <h1>Fuel Cost Per Vehicle Type</h1>
+        <button onclick="getFuelCostDataPerVehicleType()">Get Fuel Cost Data</button>
+        <div id="result5"></div>
+      </div>
+    </div>
+
+    <script>
+ function getFuelCostDataPerVehicleType() {
+  // Assuming the server responds with JSON data
+  fetch('http://localhost:3000/analytics/fuelCostByVehicleType')
+    .then(response => response.json())
+    .then(data => {
+      // Update the result div with the received data
+      document.getElementById('result5').innerHTML = formatData(data);
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error);
+      document.getElementById('result5').innerHTML = 'Error fetching fuel cost data';
+    });
+}
+
+
+function formatData(data) {
+  let formattedData = '<ul style="list-style-type:none; padding: 0; margin: 0;">';
+  data.forEach(item => {
+    formattedData += `<li style="margin-bottom: 8px; padding: 8px; background-color: #f0f0f0; border-radius: 4px;">${item.vehicle_type_id}: $${item.total_fuel_expense.toFixed(2)}</li>`;
+  });
+  formattedData += '</ul>';
+
+  return formattedData;
+}
+
+      function getFuelCostData() {
+        var resultDiv4 = document.getElementById('result4');
+
+        // Make an API request for fuel cost analytics
+        fetch('http://localhost:3000/analytics/fuelCost', {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Check if data is available
+            if (data.length === 0) {
+              resultDiv4.innerHTML = 'No fuel cost data available';
+            } else {
+              resultDiv4.innerHTML = 'Fuel Cost Data:';
+              createNewBarChart(data, 'fuelCostChart');
+            }
+          })
+          .catch((error) => {
+            console.error('Error fetching data:', error);
+            resultDiv4.innerHTML = 'Error fetching fuel cost data';
+          });
+      }
+
+      function createNewBarChart(data, chartId) {
+        var existingChart = Chart.getChart(chartId);
+
+        // Destroy existing chart if it exists
+        if (existingChart) {
+          existingChart.destroy();
+        }
+
+        // Combine vehicle_id and month in the labels
+        var labels = data.map(
+          (entry) => `${entry.vehicle_id} - ${entry.month}`,
+        );
+        var values = data.map((entry) => entry.total_fuel_cost);
+
+        var ctx = document.getElementById(chartId).getContext('2d');
+        var myChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Total Fuel Cost',
+                data: values,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+
+      function performTripsSearch() {
+        var searchInput = document.getElementById('searchInput').value;
+        var resultDiv = document.getElementById('result');
+
+        // Make an API request for total trips analytics
+        fetch(`http://localhost:3000/analytics/total_trips/${searchInput}`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Check if totalTrips is 0
+            if (data.totalTrips === 0) {
+              resultDiv.innerHTML = 'No TRIPS served by the searched driver';
+            } else {
+              resultDiv.innerHTML = `TOTAL TRIPS CARRIED BY DRIVER ${searchInput}: ${data.totalTrips}`;
+            }
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+            resultDiv.innerHTML = 'Error fetching data';
+          });
+      }
+
+      function performFuelExpenseSearch() {
+        var yearInput = document.getElementById('yearInput').value;
+        var resultDiv2 = document.getElementById('result2');
+
+        // Make an API request for fuel expense analytics
+        fetch(`http://localhost:3000/analytics/fuel_expense_avg/${yearInput}`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Check if data is available
+            if (data.length === 0) {
+              resultDiv2.innerHTML = `No data available for ${yearInput}`;
+            } else {
+              resultDiv2.innerHTML = `Data for ${yearInput}:`;
+              createBarChart(data, 'fuelExpenseChart');
+            }
+          })
+          .catch((error) => {
+            console.error('Error fetching data:', error);
+            resultDiv2.innerHTML = `No Data found for ${yearInput}`;
+          });
+      }
+
+      function performMaintenanceCostSearch() {
+        var resultDiv3 = document.getElementById('result3');
+
+        // Make an API request for maintenance cost analytics
+        fetch(`http://localhost:3000/analytics/maintenanceCost`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Check if data is available
+            if (data.length === 0) {
+              resultDiv3.innerHTML = 'No maintenance cost data available';
+            } else {
+              resultDiv3.innerHTML = 'Maintenance Cost Data:';
+              createPieChart(data, 'maintenanceCostChart');
+            }
+          })
+          .catch((error) => {
+            console.error('Error fetching data:', error);
+            resultDiv3.innerHTML = 'Error fetching maintenance cost data';
+          });
+      }
+
+      // Function to create a bar chart
+      function createBarChart(data, chartId) {
+        var labels = data.map((entry) => entry.quarter);
+        var values = data.map((entry) => entry.running_avg_total_cost);
+
+        var ctx = document.getElementById(chartId).getContext('2d');
+        var myChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Running Average Total Cost',
+                data: values,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+
+      function createPieChart(data, chartId) {
+        var labels = data.map((entry) => entry.Vehicle_maintenance);
+        var values = data.map((entry) => entry.TOTAL_COST);
+
+        var ctx = document.getElementById(chartId).getContext('2d');
+        var myChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                data: values,
+                backgroundColor: [
+                  'rgba(255, 99, 132, 0.2)',
+                  'rgba(54, 162, 235, 0.2)',
+                  'rgba(255, 206, 86, 0.2)',
+                  'rgba(75, 192, 192, 0.2)',
+                  'rgba(153, 102, 255, 0.2)',
+                  'rgba(255, 159, 64, 0.2)',
+                  'rgba(255, 99, 132, 0.2)',
+                  'rgba(54, 162, 235, 0.2)',
+                  'rgba(255, 206, 86, 0.2)',
+                  'rgba(75, 192, 192, 0.2)',
+                ],
+                borderColor: [
+                  'rgba(255, 99, 132, 1)',
+                  'rgba(54, 162, 235, 1)',
+                  'rgba(255, 206, 86, 1)',
+                  'rgba(75, 192, 192, 1)',
+                  'rgba(153, 102, 255, 1)',
+                  'rgba(255, 159, 64, 1)',
+                  'rgba(255, 99, 132, 1)',
+                  'rgba(54, 162, 235, 1)',
+                  'rgba(255, 206, 86, 1)',
+                  'rgba(75, 192, 192, 1)',
+                ],
+                borderWidth: 1,
+              },
+            ],
+          },
+        });
+      }
+    </script>
+  </body>
+</html>

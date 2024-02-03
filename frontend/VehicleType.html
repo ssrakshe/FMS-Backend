@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vehicle Type Data</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+      }
+      h1 {
+        background-color: #007bff;
+        color: #fff;
+        padding: 10px;
+      }
+      button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      #vehicleTypeList {
+        margin: 20px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+      .navbar {
+        background-color: #007bff;
+        overflow: hidden;
+      }
+
+      .navbar a {
+        float: left;
+        display: block;
+        color: white;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+      }
+
+      .navbar a:hover {
+        background-color: #0056b3;
+      }
+
+      /* Modal styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.7);
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 50%;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .close:hover {
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <a href="Driver.html" id="driverTab">Driver</a>
+      <a href="Trip.html" id="tripTab">Trip</a>
+      <a href="FuelLog.html" id="fuelLogTab">FuelLog</a>
+      <a href="Maintenance.html" id="maintenanceTab">Maintenance</a>
+      <a href="Location.html" id="locationTab">Location</a>
+      <a href="Vehicle.html" id="vehicleTab">Vehicle</a>
+      <!--<a href="MaintenanceType.html" id="maintenanceTypeTab">Maintenance Type</a>
+      <a href="VehicleType.html" id="vehicleTypeTab">Vehicle Type</a>
+      <a href="TripType.html" id="tripTypeTab">Trip Type</a>-->
+
+
+
+    </div>
+    <h1>Vehicle Type Data</h1>
+    <button id="fetchButton">Fetch Data</button>
+    <div id="vehicleTypeList"></div>
+    <script>
+      // Function to fetch and display the JSON data in a table
+      function fetchData() {
+        fetch("http://localhost:3000/vehicletype", {
+          method: "GET",
+          headers: {
+            accept: "*/*",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const vehicleTypeList = document.getElementById("vehicleTypeList");
+            vehicleTypeList.innerHTML = ""; // Clear previous data
+
+            if (data.length === 0) {
+              vehicleTypeList.innerHTML = "<p>No data available.</p>";
+            } else {
+              const table = document.createElement("table");
+              const headerRow = table.insertRow(0);
+              for (const key in data[0]) {
+                const th = document.createElement("th");
+                th.textContent = key;
+                headerRow.appendChild(th);
+              }
+
+              data.forEach((vehicleType, index) => {
+                const row = table.insertRow(index + 1);
+                for (const key in vehicleType) {
+                  const cell = row.insertCell();
+                  cell.textContent = vehicleType[key];
+                }
+              });
+
+              vehicleTypeList.appendChild(table);
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+          });
+      }
+
+      // Add a click event listener to the button
+      const fetchButton = document.getElementById("fetchButton");
+      fetchButton.addEventListener("click", fetchData);
+    </script>
+  </body>
+</html>
